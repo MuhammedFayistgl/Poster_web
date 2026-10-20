@@ -54,12 +54,22 @@ export const defaultLayout: PosterLayout = {
   },
 }
 
-const STORAGE_KEY = 'njanum-poster-layout'
+const DEV_STORAGE_KEY = 'njanum-poster-layout-dev'
 
-export function loadLayout(): PosterLayout {
+function cloneDefaultLayout(): PosterLayout {
+  return {
+    frame: { ...defaultLayout.frame },
+    name: { ...defaultLayout.name },
+    shop: { ...defaultLayout.shop },
+  }
+}
+
+/** Normal site always uses defaultLayout. Dev mode may load saved overrides. */
+export function loadLayout(devMode: boolean): PosterLayout {
+  if (!devMode) return cloneDefaultLayout()
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultLayout
+    const raw = localStorage.getItem(DEV_STORAGE_KEY)
+    if (!raw) return cloneDefaultLayout()
     const parsed = JSON.parse(raw) as Partial<PosterLayout>
     return {
       frame: { ...defaultLayout.frame, ...parsed.frame },
@@ -67,12 +77,12 @@ export function loadLayout(): PosterLayout {
       shop: { ...defaultLayout.shop, ...parsed.shop },
     }
   } catch {
-    return defaultLayout
+    return cloneDefaultLayout()
   }
 }
 
 export function saveLayout(layout: PosterLayout) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(layout))
+  localStorage.setItem(DEV_STORAGE_KEY, JSON.stringify(layout))
 }
 
 function cssNumber(value: number) {

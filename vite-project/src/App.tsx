@@ -177,7 +177,7 @@ function PosterText(props: { text: string; style: TextStyle }) {
 export default function App() {
   const dev = new URLSearchParams(window.location.search).get('dev') === '1'
   const { setSlot, scale } = useSlotScale()
-  const [layout, setLayout] = useState<PosterLayout>(() => loadLayout())
+  const [layout, setLayout] = useState<PosterLayout>(() => loadLayout(dev))
   const [name, setName] = useState('')
   const [shopName, setShopName] = useState('')
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
@@ -193,7 +193,7 @@ export default function App() {
 
   function commit(next: PosterLayout) {
     setLayout(next)
-    saveLayout(next)
+    if (dev) saveLayout(next)
   }
 
   function setFrame<K extends keyof FrameStyle>(key: K, value: FrameStyle[K]) {
