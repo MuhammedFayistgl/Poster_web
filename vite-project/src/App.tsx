@@ -41,11 +41,12 @@ function Slider(props: {
   max: number
   step: number
   value: number
+  disabled?: boolean
   onChange: (value: number) => void
 }) {
   const shown = props.step < 1 ? props.value.toFixed(2) : String(Math.round(props.value))
   return (
-    <label className="slider">
+    <label className={`slider${props.disabled ? ' slider--locked' : ''}`}>
       <span className="slider-label">
         <span>{props.label}</span>
         <span>{shown}</span>
@@ -56,6 +57,7 @@ function Slider(props: {
         max={props.max}
         step={props.step}
         value={props.value}
+        disabled={props.disabled}
         onChange={(event) => props.onChange(Number(event.target.value))}
       />
     </label>
@@ -64,6 +66,7 @@ function Slider(props: {
 
 function PlacementSettings(props: {
   value: TextStyle
+  locked: boolean
   onChange: (next: TextStyle) => void
 }) {
   const set = <K extends keyof TextStyle>(key: K, next: TextStyle[K]) => {
@@ -71,14 +74,31 @@ function PlacementSettings(props: {
   }
   return (
     <>
-      <Slider label="X" min={0} max={POSTER_WIDTH} step={1} value={props.value.x} onChange={(value) => set('x', value)} />
-      <Slider label="Y" min={0} max={POSTER_HEIGHT} step={1} value={props.value.y} onChange={(value) => set('y', value)} />
+      <Slider
+        label="X"
+        min={0}
+        max={POSTER_WIDTH}
+        step={1}
+        value={props.value.x}
+        disabled={props.locked}
+        onChange={(value) => set('x', value)}
+      />
+      <Slider
+        label="Y"
+        min={0}
+        max={POSTER_HEIGHT}
+        step={1}
+        value={props.value.y}
+        disabled={props.locked}
+        onChange={(value) => set('y', value)}
+      />
       <Slider
         label="Font size"
         min={12}
         max={200}
         step={1}
         value={props.value.fontSize}
+        disabled={props.locked}
         onChange={(value) => set('fontSize', value)}
       />
     </>
@@ -184,6 +204,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [layoutLocked, setLayoutLocked] = useState(true)
   const cssRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -254,6 +275,21 @@ export default function App() {
         <PosterPreview scale={scale} layout={layout} name={name} shopName={shopName} photoUrl={photoUrl} />
       </div>
       <aside className="panel">
+        <div className="lock-bar">
+          <p className="lock-text">
+            {layoutLocked
+              ? 'Position and size are locked.'
+              : 'You can adjust position and size.'}
+          </p>
+          <button
+            className="lock-toggle"
+            type="button"
+            aria-pressed={!layoutLocked}
+            onClick={() => setLayoutLocked((locked) => !locked)}
+          >
+            {layoutLocked ? 'Unlock' : 'Lock'}
+          </button>
+        </div>
         <fieldset>
           <legend>Name</legend>
           <label className="field">
@@ -265,8 +301,12 @@ export default function App() {
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <p className="group-note">Position and size</p>
-          <PlacementSettings value={layout.name} onChange={(next) => commit({ ...layout, name: next })} />
+          {!layoutLocked && <p className="group-note">Position and size</p>}
+          <PlacementSettings
+            locked={layoutLocked}
+            value={layout.name}
+            onChange={(next) => commit({ ...layout, name: next })}
+          />
         </fieldset>
         <fieldset>
           <legend>Shop name</legend>
@@ -279,8 +319,12 @@ export default function App() {
               onChange={(event) => setShopName(event.target.value)}
             />
           </label>
-          <p className="group-note">Position and size</p>
-          <PlacementSettings value={layout.shop} onChange={(next) => commit({ ...layout, shop: next })} />
+          {!layoutLocked && <p className="group-note">Position and size</p>}
+          <PlacementSettings
+            locked={layoutLocked}
+            value={layout.shop}
+            onChange={(next) => commit({ ...layout, shop: next })}
+          />
         </fieldset>
         <fieldset>
           <legend>Image</legend>
@@ -288,7 +332,16 @@ export default function App() {
             Choose image
             <input type="file" accept="image/*" onChange={onPhoto} />
           </label>
-          <Slider label="Zoom" min={1} max={3} step={0.01} value={layout.frame.zoom} onChange={(value) => setFrame('zoom', value)} />
+          {!layoutLocked && (
+            <Slider
+              label="Zoom"
+              min={1}
+              max={3}
+              step={0.01}
+              value={layout.frame.zoom}
+              onChange={(value) => setFrame('zoom', value)}
+            />
+          )}
         </fieldset>
         <button className="download" type="button" onClick={onDownload} disabled={busy}>
           {busy ? 'Creating...' : 'Download PNG'}
